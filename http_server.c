@@ -11,16 +11,43 @@
 #include <fcntl.h>
 #include <errno.h>
 extern int errno;
+/*
 
+void *file_handler(char *fileName, char *msg)
+{
+  // context of the file
+  //char msg[1300];
+
+  // Open up the file //
+  int inFile = open(fileName, O_RDONLY);  // HARD CODED, need to change this so that the client can open any file
+
+  // print error and exit if it fails
+  if (inFile < 0){
+     printf("Error: file:  %s not found\n", "index.html");
+     printf("Error Number %d\n", errno);
+     return 0;
+  }
+  else
+    printf("File %s succesfully found\n", "index.html");
+
+   // READ FILE //
+  if(read(inFile, msg, 1300) > 0){ // HARD CODED, the index.html is about 1290 bytes long so I just made this 1300
+    // so we might have to make a larger buffer size, or use a while loop like in hw 1
+    msg[strlen(msg)] = '\0';
+    //   printf("%s", msg);
+  }
+  
+}
+  
+  
 void *client_handler(void *arg)
 {
-  
-
-  // the contents of the index file
-  char msg[1300];
-
+  char output[1300];
+  file_handler("index.html", output);
+  printf("%s\n", output);
+  //printf("%s \n", s);
+ 
   // what we are going to write back to the client, header + msg combined
-  char output[1400];
 
   // clients HTTP request info
   char request[80];
@@ -36,27 +63,85 @@ void *client_handler(void *arg)
 
   // OPEN FILE //
   if (read(sockfd, request, 80) > 0) {
+    file_handler("index.html", output);   //HARD CODED !!!!>>>!!!!!!
+    
+
+   // the content length is the length of the body, aka the file length
+    sprintf(header, "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: %d\n\n", strlen(output));
+    write(sockfd, header, strlen(header));
+    write(sockfd, output, strlen(output));
+   
+   // copy header to output
+   memcpy(output, header, strlen(header));
+
+   // concatenate the body (file data) to the header.
+   // we cant just do output = header + msg  BTW, cuz output is a pointer so is header and msg. so we need to copy the data from them
+ //  memcpy(&output[strlen(header)], msg, strlen(msg));
+   //    output = hello + msg;
+  // output[strlen(output)] = '\0';
+    
+      
+ //  write(sockfd, output, strlen(output));
+	//	printf("DD");
+	
+
+
+  }
+
+  close(sockfd);
+  
+}
+
+*/
+
+void *client_handler(void *arg)
+{
+  char output[1300];
+  //printf("%s \n", s);
+ 
+  // what we are going to write back to the client, header + msg combined
+
+  // clients HTTP request info
+  char request[80];
+
+  // a simple  HTTP response header, when you make a client by going on your  broswer to connect to ip and port, it sends a HTTP request header and body to server
+  // so server has to respond with appropriate HTTP header. without it, there would be an error. If you run date_server.c
+  // that we did during class, and make a client on your browser, it works only because the server never does
+  // the read command, it just accepts the socket connection and writes something back. In our case we need to read (i think) to get
+  // name of the file, so we must also include a header
+  char header[100];
+  int sockfd;
+  sockfd = *(int *)arg;
+
+  // OPEN FILE //
+  if (read(sockfd, request, 80) > 0) {
+    // context of the file
+    //char msg[1300];
+
+    // Open up the file //
     int inFile = open("index.html", O_RDONLY);  // HARD CODED, need to change this so that the client can open any file
 
   // print error and exit if it fails
-   if (inFile < 0){
-     printf("Error: file:  %s not found\n", "index.html");
-     printf("Error Number %d\n", errno);
-     return 0;
-   }
-   else
-     printf("File %s succesfully found\n", "index.html");
+    if (inFile < 0){
+      printf("Error: file:  %s not found\n", "index.html");
+      printf("Error Number %d\n", errno);
+      return 0;
+    }
+    else
+      printf("File %s succesfully found\n", "index.html");
 
    // READ FILE //
-   if(read(inFile, msg, 1300) > 0){ // HARD CODED, the index.html is about 1290 bytes long so I just made this 1300
-                                    // so we might have to make a larger buffer size, or use a while loop like in hw 1
-     msg[strlen(msg)] = '\0';
-     //   printf("%s", msg);
-   }
+    if(read(inFile, output, 1300) > 0){ // HARD CODED, the index.html is about 1290 bytes long so I just made this 1300
+      // so we might have to make a larger buffer size, or use a while loop like in hw 1
+      output[strlen(output)] = '\0';
+    //   printf("%s", msg);
+    }    
 
    // the content length is the length of the body, aka the file length
-   sprintf(header, "HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: %d\n\n", strlen(msg));
-
+    sprintf(header, "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: %d\n\n", strlen(output));
+    write(sockfd, header, strlen(header));
+    write(sockfd, output, strlen(output));
+   /*
    // copy header to output
    memcpy(output, header, strlen(header));
 
@@ -67,16 +152,17 @@ void *client_handler(void *arg)
    output[strlen(output)] = '\0';
     
       
-    write(sockfd, output, strlen(output));
+   write(sockfd, output, strlen(output));
 	//	printf("DD");
+	*/
 
 
+  }
 
-    }
-
-    close(sockfd);
-
+  close(sockfd);
+  
 }
+
 
 int main(int argc, char *argv[]) 
 {
